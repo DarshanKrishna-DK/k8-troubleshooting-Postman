@@ -1,0 +1,87 @@
+# Deployment - Manages the pods running our API
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-api
+  namespace: demo
+  labels:
+    app: demo-api
+spec:
+  replicas: 3  # Run 3 copies for high availability
+  selector:
+    matchLabels:
+      app: demo-api
+  template:
+    metadata:
+      labels:
+        app: demo-api
+    spec:
+      containers:
+      - name: demo-api
+        image: k8s-demo-api:latest
+        imagePullPolicy: Never  # Use local image (for minikube)
+        ports:
+        - containerPort: 3000
+          name: http
+        
+        # Environment variables from ConfigMap
+        env:
+        - name: PORT
+          value: "3000"
+        - name: APP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: APP_NAME
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: DB_HOST
+        - name: FAILURE_RATE
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: FAILURE_RATE
+        - name: NODE_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: NODE_ENV
+        # Kubernetes automatically sets HOSTNAME to pod name
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        
+        # Liveness Probe - Is the container alive?
+        # If this fails, K8s will restart the container
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        
+        # Readiness Probe - Is the container ready to receive traffic?
+        # If this fails, K8s removes the pod from the service
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        
+        # Resource limits - Important for stability
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+

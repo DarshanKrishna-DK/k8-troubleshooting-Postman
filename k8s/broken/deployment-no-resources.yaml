@@ -1,0 +1,47 @@
+# BROKEN Deployment - No Resource Limits
+# This deployment has no resource limits, which can cause issues
+# Result: Pods can consume unlimited resources, affecting other workloads
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-api
+  namespace: demo
+  labels:
+    app: demo-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo-api
+  template:
+    metadata:
+      labels:
+        app: demo-api
+    spec:
+      containers:
+      - name: demo-api
+        image: k8s-demo-api:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: APP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: APP_NAME
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: DB_HOST
+        - name: FAILURE_RATE
+          valueFrom:
+            configMapKeyRef:
+              name: demo-config
+              key: FAILURE_RATE
+        # ❌ NO RESOURCE LIMITS - Bad practice!
+        # ❌ NO HEALTH PROBES - Even worse!
+

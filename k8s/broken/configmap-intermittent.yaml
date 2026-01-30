@@ -1,0 +1,17 @@
+# BROKEN ConfigMap - Intermittent Failures
+# This simulates an unstable service with 50% failure rate
+# Result: Health checks will randomly fail, showing flaky behavior
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-config
+  namespace: demo
+  labels:
+    app: demo-api
+    version: intermittent
+data:
+  APP_NAME: "K8s Demo - FLAKY"
+  DB_HOST: "mongodb://db-service:27017"
+  FAILURE_RATE: "0.5"  # ❌ 50% of health checks will fail!
+  NODE_ENV: "production"
+

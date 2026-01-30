@@ -1,0 +1,40 @@
+# BROKEN Deployment - Wrong Image Name
+# This deployment references an image that doesn't exist
+# Result: ImagePullBackOff error, pods won't start
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-api
+  namespace: demo
+  labels:
+    app: demo-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: demo-api
+  template:
+    metadata:
+      labels:
+        app: demo-api
+    spec:
+      containers:
+      - name: demo-api
+        image: k8s-demo-api:v999-does-not-exist  # ❌ This image doesn't exist!
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: APP_NAME
+          value: "Broken Image Demo"
+        - name: DB_HOST
+          value: "localhost"
+        - name: FAILURE_RATE
+          value: "0"
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+

@@ -1,0 +1,652 @@
+{
+  "info": {
+    "_postman_id": "k8s-troubleshoot-demo-2024",
+    "name": "K8s Troubleshooting Demo",
+    "description": "# Kubernetes Troubleshooting with Postman\n\nThis collection demonstrates how to use Postman for troubleshooting Kubernetes deployments.\n\n## Quick Start\n1. Start minikube: `minikube start`\n2. Get the service URL: `minikube service demo-api-service -n demo --url`\n3. Update the `baseUrl` variable with the URL\n4. Run the collection!\n\n## Scenarios\n- **Health Checks**: Verify service health\n- **API Tests**: Test business logic\n- **Troubleshooting**: Find and diagnose issues",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:30080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🏥 Health Checks",
+      "description": "Essential health check endpoints used by Kubernetes probes",
+      "item": [
+        {
+          "name": "Liveness Check (/health)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test: Status code should be 200",
+                  "pm.test('Health check returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test: Response indicates healthy",
+                  "pm.test('Status is healthy', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('healthy');",
+                  "});",
+                  "",
+                  "// Test: Response time is acceptable (under 500ms)",
+                  "pm.test('Response time < 500ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});",
+                  "",
+                  "// Log which pod responded",
+                  "const json = pm.response.json();",
+                  "console.log('✅ Pod responded: ' + json.pod);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Kubernetes Liveness Probe endpoint. If this fails, K8s restarts the pod."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check (/ready)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Test: Status code should be 200",
+                  "pm.test('Readiness check returns 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Test: App is ready",
+                  "pm.test('App is ready', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.ready).to.be.true;",
+                  "});",
+                  "",
+                  "// Test: Database is connected",
+                  "pm.test('Database connection present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.database).to.exist;",
+                  "    pm.expect(json.database).to.not.eql('invalid-host');",
+                  "});",
+                  "",
+                  "// Log details",
+                  "const json = pm.response.json();",
+                  "console.log('✅ Pod: ' + json.pod + ', DB: ' + json.database);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["ready"]
+            },
+            "description": "Kubernetes Readiness Probe endpoint. If this fails, K8s removes the pod from service."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "📊 API Endpoints",
+      "description": "Core business API endpoints",
+      "item": [
+        {
+          "name": "Get App Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Has required fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('name');",
+                  "    pm.expect(json).to.have.property('version');",
+                  "    pm.expect(json).to.have.property('pod');",
+                  "    pm.expect(json).to.have.property('environment');",
+                  "});",
+                  "",
+                  "pm.test('Version is 1.0.0', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.version).to.eql('1.0.0');",
+                  "});",
+                  "",
+                  "// Store pod name for later use",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('lastPod', json.pod);",
+                  "console.log('📍 Responded by pod: ' + json.pod);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "info"]
+            },
+            "description": "Returns application information including which pod is responding."
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns array of products', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.products).to.be.an('array');",
+                  "    pm.expect(json.count).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('Products have required fields', function () {",
+                  "    const json = pm.response.json();",
+                  "    json.products.forEach(product => {",
+                  "        pm.expect(product).to.have.property('id');",
+                  "        pm.expect(product).to.have.property('name');",
+                  "        pm.expect(product).to.have.property('price');",
+                  "    });",
+                  "});",
+                  "",
+                  "console.log('📦 Found ' + pm.response.json().count + ' products');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"]
+            },
+            "description": "Returns all products in the catalog."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns correct product', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.id).to.eql(1);",
+                  "    pm.expect(json.name).to.exist;",
+                  "});",
+                  "",
+                  "console.log('📦 Product: ' + pm.response.json().name);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "1"]
+            },
+            "description": "Returns a specific product by ID."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product - Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error message present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.error).to.eql('Product not found');",
+                  "});",
+                  "",
+                  "console.log('✅ Correctly returned 404 for non-existent product');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products/999",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products", "999"]
+            },
+            "description": "Tests 404 handling for non-existent products."
+          },
+          "response": []
+        },
+        {
+          "name": "Filter Products by Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('All products are Books', function () {",
+                  "    const json = pm.response.json();",
+                  "    json.products.forEach(product => {",
+                  "        pm.expect(product.category).to.eql('Books');",
+                  "    });",
+                  "});",
+                  "",
+                  "console.log('📚 Found ' + pm.response.json().count + ' books');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/products?category=Books",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "products"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "Books"
+                }
+              ]
+            },
+            "description": "Filter products by category."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔧 Troubleshooting Tests",
+      "description": "Endpoints specifically for testing failure scenarios",
+      "item": [
+        {
+          "name": "Slow Response Test (2s)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Response received', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response time is around 2 seconds', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.above(1900);",
+                  "    pm.expect(pm.response.responseTime).to.be.below(3000);",
+                  "});",
+                  "",
+                  "console.log('⏱️ Response time: ' + pm.response.responseTime + 'ms');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/slow?delay=2000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "slow"],
+              "query": [
+                {
+                  "key": "delay",
+                  "value": "2000"
+                }
+              ]
+            },
+            "description": "Tests slow response handling. Useful for timeout testing."
+          },
+          "response": []
+        },
+        {
+          "name": "Error Endpoint (500)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Returns 500 error', function () {",
+                  "    pm.response.to.have.status(500);",
+                  "});",
+                  "",
+                  "pm.test('Error message present', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('error');",
+                  "});",
+                  "",
+                  "console.log('💥 Error endpoint correctly returned 500');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/error",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "error"]
+            },
+            "description": "Always returns a 500 error. Useful for testing error handling."
+          },
+          "response": []
+        },
+        {
+          "name": "Chaos Test (50% Fail)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// This test expects either success or failure",
+                  "pm.test('Response received (success or failure)', function () {",
+                  "    pm.expect([200, 500, 502, 503, 504]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('✅ Chaos test PASSED');",
+                  "} else {",
+                  "    console.log('❌ Chaos test FAILED with ' + pm.response.code);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chaos?failChance=0.5",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chaos"],
+              "query": [
+                {
+                  "key": "failChance",
+                  "value": "0.5"
+                }
+              ]
+            },
+            "description": "Randomly fails 50% of the time. Run multiple times to see the behavior."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔄 Load Balancing Test",
+      "description": "Tests to verify K8s is distributing traffic across pods",
+      "item": [
+        {
+          "name": "Check Pod Distribution (Run 10x)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Track which pods respond",
+                  "const json = pm.response.json();",
+                  "const podName = json.pod;",
+                  "",
+                  "// Get or initialize pod tracking",
+                  "let podCounts = pm.collectionVariables.get('podCounts');",
+                  "if (!podCounts) {",
+                  "    podCounts = {};",
+                  "}",
+                  "if (typeof podCounts === 'string') {",
+                  "    podCounts = JSON.parse(podCounts);",
+                  "}",
+                  "",
+                  "// Increment count for this pod",
+                  "podCounts[podName] = (podCounts[podName] || 0) + 1;",
+                  "pm.collectionVariables.set('podCounts', JSON.stringify(podCounts));",
+                  "",
+                  "// Log current distribution",
+                  "console.log('📊 Pod Distribution:');",
+                  "Object.entries(podCounts).forEach(([pod, count]) => {",
+                  "    console.log(`   ${pod}: ${count} requests`);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Reset tracking on first iteration",
+                  "const iteration = pm.info.iteration;",
+                  "if (iteration === 0) {",
+                  "    pm.collectionVariables.unset('podCounts');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "info"]
+            },
+            "description": "Run this request 10 times using Collection Runner to see load balancing across pods."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🚨 Failure Scenario Tests",
+      "description": "Tests to run when things are broken",
+      "item": [
+        {
+          "name": "Health Check - Expect Failure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// When using broken config, health checks may fail",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Health check passed', function () {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json.status).to.eql('healthy');",
+                  "    });",
+                  "    console.log('✅ Health check passed');",
+                  "} else if (pm.response.code === 503) {",
+                  "    pm.test('Health check failed as expected', function () {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json.status).to.eql('unhealthy');",
+                  "    });",
+                  "    console.log('❌ Health check failed: ' + pm.response.json().error);",
+                  "} else {",
+                  "    pm.test('Unexpected response', function () {",
+                  "        pm.expect.fail('Got unexpected status: ' + pm.response.code);",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Use this when testing with broken configurations to see failure behavior."
+          },
+          "response": []
+        },
+        {
+          "name": "Readiness Check - Expect Failure",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// When using broken-db config, readiness should fail",
+                  "if (pm.response.code === 200) {",
+                  "    pm.test('Readiness check passed', function () {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json.ready).to.be.true;",
+                  "    });",
+                  "    console.log('✅ App is ready, DB: ' + pm.response.json().database);",
+                  "} else if (pm.response.code === 503) {",
+                  "    pm.test('Readiness check failed as expected', function () {",
+                  "        const json = pm.response.json();",
+                  "        pm.expect(json.ready).to.be.false;",
+                  "    });",
+                  "    console.log('❌ App not ready: ' + pm.response.json().error);",
+                  "    console.log('   DB Host: ' + pm.response.json().dbHost);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ready",
+              "host": ["{{baseUrl}}"],
+              "path": ["ready"]
+            },
+            "description": "Use this when testing with broken-db configuration."
+          },
+          "response": []
+        },
+        {
+          "name": "Connection Test",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Basic connection test",
+                  "pm.test('Service is reachable', function () {",
+                  "    pm.expect(pm.response).to.exist;",
+                  "});",
+                  "",
+                  "if (pm.response.code >= 200 && pm.response.code < 500) {",
+                  "    console.log('✅ Service is reachable');",
+                  "} else {",
+                  "    console.log('❌ Service returned error: ' + pm.response.code);",
+                  "}",
+                  "",
+                  "console.log('⏱️ Response time: ' + pm.response.responseTime + 'ms');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/info",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "info"]
+            },
+            "description": "Basic test to check if the service is reachable at all."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request script",
+          "console.log('🚀 Request: ' + pm.info.requestName);"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test script",
+          "console.log('📍 Response from: ' + pm.response.headers.get('X-Pod-Name') || 'unknown pod');"
+        ]
+      }
+    }
+  ]
+}
+

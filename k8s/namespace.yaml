@@ -1,0 +1,9 @@
+# Namespace to keep demo resources organized
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+  labels:
+    app: k8s-troubleshoot-demo
+    purpose: postman-meetup
+

@@ -1,0 +1,17 @@
+# BROKEN ConfigMap - Database Connection Issue
+# This simulates a misconfigured database host
+# Result: Readiness probe will fail, pods won't receive traffic
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-config
+  namespace: demo
+  labels:
+    app: demo-api
+    version: broken-db
+data:
+  APP_NAME: "K8s Demo - BROKEN DB"
+  DB_HOST: "invalid-host"  # ❌ This causes readiness probe to fail!
+  FAILURE_RATE: "0"
+  NODE_ENV: "production"
+

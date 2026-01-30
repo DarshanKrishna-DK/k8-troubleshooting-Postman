@@ -1,0 +1,16 @@
+# ConfigMap - Working configuration
+# This is the "good" configuration that makes everything work properly
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-config
+  namespace: demo
+  labels:
+    app: demo-api
+    version: working
+data:
+  APP_NAME: "K8s Troubleshooting Demo"
+  DB_HOST: "mongodb://db-service:27017"
+  FAILURE_RATE: "0"
+  NODE_ENV: "production"
+

@@ -1,0 +1,20 @@
+# BROKEN Service - Wrong Selector
+# This service has a selector that doesn't match any pods
+# Result: Service has no endpoints, requests fail
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-api-service
+  namespace: demo
+  labels:
+    app: demo-api
+spec:
+  type: NodePort
+  selector:
+    app: wrong-app-name  # ❌ No pods have this label!
+  ports:
+  - name: http
+    port: 80
+    targetPort: 3000
+    nodePort: 30080
+
