@@ -1,4 +1,11 @@
-# Troubleshooting Kubernetes with Postman
+<h1 align="center">Troubleshooting Kubernetes with Postman</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Kubernetes-3178C6?style=for-the-badge" alt="Kubernetes" />
+  <img src="https://img.shields.io/badge/Postman-7C3AED?style=for-the-badge" alt="Postman" />
+  <img src="https://img.shields.io/badge/Node.js-0F766E?style=for-the-badge" alt="Node.js" />
+  <img src="https://img.shields.io/badge/Express-334155?style=for-the-badge" alt="Express" />
+</p>
 
 A hands-on project demonstrating how to use Postman for troubleshooting and testing Kubernetes deployments. Includes a sample Node.js API, working Kubernetes manifests, intentionally broken configurations for practice, and a ready-to-use Postman collection.
 
